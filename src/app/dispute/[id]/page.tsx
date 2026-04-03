@@ -83,7 +83,7 @@ export default function DisputeDetailPage({ params }: Props) {
                 Escrowed Amount
               </p>
               <p className="text-4xl font-extrabold text-text-primary font-mono">
-                {escrowEth} <span className="text-2xl font-bold">ETH</span>
+                {escrowEth} <span className="text-2xl font-bold">GEN</span>
               </p>
             </div>
           </div>

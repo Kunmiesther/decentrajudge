@@ -30,7 +30,7 @@ export default function DisputeCard({ dispute }: { dispute: Dispute }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-text-secondary text-xs">
           <Lock className="w-3 h-3" />
-          <span className="font-mono">{fromWei(BigInt(Math.floor(dispute.escrow_amount)))} ETH</span>
+          <span className="font-mono">{fromWei(BigInt(Math.floor(dispute.escrow_amount)))} GEN</span>
           <span className="text-text-tertiary">escrowed</span>
         </div>
         <span className="font-mono text-xs text-text-tertiary">

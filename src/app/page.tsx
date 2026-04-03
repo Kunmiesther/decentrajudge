@@ -58,7 +58,7 @@ export default function HomePage() {
             {/* Network pill */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-surface border border-border rounded-full text-xs font-mono text-text-secondary mb-10">
               <span className="w-1.5 h-1.5 rounded-full bg-status-resolved animate-pulse" />
-              ARBITRUM ONE MAINNET LIVE
+              GENLAYER MAINNET LIVE
             </div>
 
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-text-primary leading-[1.05] mb-6 max-w-4xl mx-auto">

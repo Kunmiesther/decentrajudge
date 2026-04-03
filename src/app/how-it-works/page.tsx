@@ -95,7 +95,7 @@ const FAQS = [
   },
   {
     q: 'What currency is used for escrow?',
-    a: 'GEN token on GenLayer Simulator, or ETH/native tokens on supported mainnets. The contract is currency-agnostic — whatever the deploying network uses.',
+    a: 'GEN token on GenLayer. The contract uses GEN as the native currency for all escrow and payouts.',
   },
   {
     q: 'Can I use DecentraJudge without coding knowledge?',

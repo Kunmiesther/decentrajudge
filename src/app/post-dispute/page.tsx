@@ -128,7 +128,7 @@ export default function PostDisputePage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-mono tracking-widest text-text-secondary uppercase mb-2">
-                        Escrow Amount (ETH)
+                        Escrow Amount (GEN)
                       </label>
                       <div className="relative">
                         <input
@@ -142,7 +142,7 @@ export default function PostDisputePage() {
                           className="input-field pr-14"
                         />
                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono text-text-tertiary">
-                          ETH
+                          GEN
                         </span>
                       </div>
                     </div>
@@ -226,7 +226,7 @@ export default function PostDisputePage() {
                   </button>
 
                   <p className="text-center text-xs font-mono tracking-widest text-text-tertiary uppercase">
-                    Transaction Secured by Arbitrum One
+                    Transaction Secured by GenLayer
                   </p>
                 </div>
               </div>
