@@ -7,11 +7,40 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useDispute, useFinalizeVerdict } from '@/hooks/useDisputes'
-import { shortAddress, fromWei, generateValidatorPanel } from '@/lib/genlayer'
+import { shortAddress, fromWei } from '@/lib/genlayer'
 import clsx from 'clsx'
 
 interface Props {
   params: Promise<{ id: string }>
+}
+
+// Build validator panel from the contract's verdict fields
+function buildValidatorPanel(verdict: string, reasoning: string, confidence: string) {
+  if (!verdict) {
+    return [
+      { id: 'VALIDATOR #0032', verdict: 'ANALYZING...', reasoning: '' },
+      { id: 'VALIDATOR #0081', verdict: 'ANALYZING...', reasoning: '' },
+      { id: 'VALIDATOR #0114', verdict: 'ANALYZING...', reasoning: '' },
+      { id: 'VALIDATOR #0027', verdict: 'ANALYZING...', reasoning: '' },
+      { id: 'VALIDATOR #0099', verdict: 'ANALYZING...', reasoning: '' },
+    ]
+  }
+
+  // Map confidence string to a numeric ratio for favour count
+  const favourMap: Record<string, number> = { high: 4, medium: 3, low: 2 }
+  const favourCount = favourMap[confidence] ?? 3
+  const ids = ['#0032', '#0081', '#0114', '#0027', '#0099']
+
+  return ids.map((id, i) => {
+    const isFavour = i < favourCount
+    return {
+      id: `VALIDATOR ${id}`,
+      verdict: isFavour ? 'IN FAVOUR' : 'DISPUTED',
+      reasoning: isFavour
+        ? reasoning.slice(0, 120)
+        : 'Assessment diverges from primary ruling on key technical criteria.',
+    }
+  })
 }
 
 export default function DisputeDetailPage({ params }: Props) {
@@ -22,22 +51,15 @@ export default function DisputeDetailPage({ params }: Props) {
   if (loading) return <LoadingSkeleton />
   if (!dispute) return <NotFound />
 
-  const escrowEth = fromWei(BigInt(Math.floor(dispute.escrow_amount)))
+  // escrow_amount is a string from the contract
+  const escrowGEN = fromWei(BigInt(dispute.escrow_amount || '0'))
   const caseId = `#0X${dispute.claimant.slice(2, 7).toUpperCase()}...${dispute.id.padStart(2, '0').toUpperCase()}E`
 
-  const validators = dispute.verdict_data && dispute.verdict_data.verdict
-    ? generateValidatorPanel({
-        verdict: dispute.verdict_data.verdict,
-        reasoning: dispute.verdict_data.reasoning,
-        confidence: dispute.verdict_data.confidence,
-      })
-    : [
-        { id: 'VALIDATOR #0032', verdict: 'IN FAVOUR', reasoning: 'Milestone artifacts align with the primary contract. Coverage discrepancy is within the margin of error (±2%).' },
-        { id: 'VALIDATOR #0081', verdict: 'DISPUTED', reasoning: 'Critical security flag in liquidity_pool.sol (Line 144) violates the "Production Ready" requirement.' },
-        { id: 'VALIDATOR #0114', verdict: 'IN FAVOUR', reasoning: 'UI deliverables meet all Figma specifications. Security concern is identified as a false positive by secondary analysis.' },
-        { id: 'VALIDATOR #0027', verdict: 'IN FAVOUR', reasoning: 'Technical annex ambiguity favors the executor in this instance. Code quality exceeds median protocol standards.' },
-        { id: 'VALIDATOR #0099', verdict: 'ANALYZING...', reasoning: '' },
-      ]
+  const validators = buildValidatorPanel(
+    dispute.verdict,
+    dispute.verdict_reasoning,
+    dispute.verdict_confidence
+  )
 
   const inFavour = validators.filter((v) => v.verdict === 'IN FAVOUR').length
   const total = validators.filter((v) => v.verdict !== 'ANALYZING...').length || 5
@@ -83,7 +105,7 @@ export default function DisputeDetailPage({ params }: Props) {
                 Escrowed Amount
               </p>
               <p className="text-4xl font-extrabold text-text-primary font-mono">
-                {escrowEth} <span className="text-2xl font-bold">GEN</span>
+                {escrowGEN} <span className="text-2xl font-bold">GEN</span>
               </p>
             </div>
           </div>
@@ -104,6 +126,16 @@ export default function DisputeDetailPage({ params }: Props) {
                     <p key={i}>{para}</p>
                   ))}
                 </div>
+                {dispute.verdict_reasoning && (
+                  <div className="mt-4 bg-surface-2 border border-border rounded-xl px-4 py-3">
+                    <p className="text-xs font-mono text-text-tertiary uppercase tracking-wider mb-1">
+                      AI Verdict Reasoning
+                    </p>
+                    <p className="text-text-secondary text-sm leading-relaxed">
+                      {dispute.verdict_reasoning}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Evidence Locker */}
@@ -113,23 +145,28 @@ export default function DisputeDetailPage({ params }: Props) {
                     <Folder className="w-4 h-4 text-text-secondary" />
                     <h2 className="font-semibold text-text-primary">Evidence Locker</h2>
                   </div>
-                  <span className="text-xs font-mono text-text-tertiary">4 ITEMS UPLOADED</span>
+                  <span className="text-xs font-mono text-text-tertiary">SUBMITTED</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <EvidenceItem
                     icon="file"
-                    name="PR #421: DEX Core"
-                    type="GITHUB REPOSITORY"
+                    name="Primary Evidence"
+                    type="SUBMITTED URL"
                     href={dispute.evidence_url}
                   />
-                  <EvidenceItem
-                    icon="shield"
-                    name="Coverage_Report.html"
-                    type="ARTIFACT"
-                    href="#"
-                  />
                 </div>
+
+                {dispute.evidence_summary && (
+                  <div className="mt-4 bg-surface-2 border border-border rounded-xl px-4 py-3">
+                    <p className="text-xs font-mono text-text-tertiary uppercase tracking-wider mb-1">
+                      Evidence Summary (AI)
+                    </p>
+                    <p className="text-text-secondary text-xs leading-relaxed">
+                      {dispute.evidence_summary}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -140,7 +177,7 @@ export default function DisputeDetailPage({ params }: Props) {
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-indigo/10 border border-indigo/20 flex items-center justify-center">
                       <svg className="w-3.5 h-3.5 text-indigo" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
                       </svg>
                     </div>
                     <h2 className="font-semibold text-text-primary">AI Validator Panel</h2>
@@ -211,8 +248,6 @@ export default function DisputeDetailPage({ params }: Props) {
 
 function ValidatorCard({ validator }: { validator: { id: string; verdict: string; reasoning: string } }) {
   const isAnalyzing = validator.verdict === 'ANALYZING...'
-  const isFavour = validator.verdict === 'IN FAVOUR'
-  const isDisputed = validator.verdict === 'DISPUTED'
 
   return (
     <div className="validator-card">
@@ -256,7 +291,7 @@ function EvidenceItem({
           <FileText className="w-4 h-4 text-text-secondary" />
         ) : (
           <svg className="w-4 h-4 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.955 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
           </svg>
         )}
       </div>
@@ -310,7 +345,7 @@ function NotFound() {
       <main className="flex-1 flex items-center justify-center pt-16">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-text-primary mb-2">Dispute not found</h2>
-          <p className="text-text-secondary mb-6">This case ID doesn't exist or has been removed.</p>
+          <p className="text-text-secondary mb-6">This case ID does not exist or has been removed.</p>
           <Link href="/browse" className="btn-primary inline-flex">
             <ArrowLeft className="w-4 h-4" />
             Back to Browse

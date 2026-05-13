@@ -16,53 +16,50 @@ import {
   CONTRACT_ADDRESS,
 } from '@/lib/genlayer'
 
-// ─── Mock data (used when contract address is not yet set) ────────────────────
-const CONTRACT_NOT_DEPLOYED = CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000'
+const CONTRACT_NOT_DEPLOYED =
+  CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000'
 
+// Mock data aligned with contract's dispute_to_dict() output
 const MOCK_DISPUTES: Dispute[] = [
   {
     id: '0',
     job_title: 'Full-Stack Development: Decentralized Exchange',
     job_brief:
-      'The claimant (Developer) asserts that all items defined in the Phase 3 milestone—specifically the smart contract auditing bridge and the frontend swap interface—have been delivered according to the specification document dated 2024-03-12.\n\nThe respondent (Client) disputes the payment, citing that the unit tests for the liquidity pool contracts do not meet the 95% coverage threshold agreed upon in the technical annex. Additionally, a critical vulnerability was flagged by a third-party automated tool.',
+      'The claimant (Developer) asserts that all items defined in the Phase 3 milestone—specifically the smart contract auditing bridge and the frontend swap interface—have been delivered according to the specification document.\n\nThe respondent (Client) disputes the payment, citing that the unit tests for the liquidity pool contracts do not meet the 95% coverage threshold agreed upon in the technical annex.',
     evidence_url: 'https://github.com/example/dex-core/pull/421',
     resolution_criteria:
-      'Work is complete if: (1) All Phase 3 milestones are delivered, (2) Test coverage meets or exceeds 95%, (3) No critical security vulnerabilities exist in audited contracts.',
+      'Work is complete if: (1) All Phase 3 milestones are delivered, (2) Test coverage meets or exceeds 95%, (3) No critical vulnerabilities exist.',
     claimant: '0xf4a9b2c1d3e5f6a7b8c9d0e1f2a3b4c5d6e7f821',
     respondent: '0xa1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a921',
-    escrow_amount: 12500000000000000000,
+    escrow_amount: '12500000000000000000',
     status: 'under_review',
-    verdict: null,
-    validator_notes: [],
-    created_at: Date.now() - 86400000,
-    resolved_at: null,
+    verdict: '',
+    verdict_reasoning: '',
+    verdict_confidence: '',
+    evidence_summary: '',
+    created_at: String(Date.now() - 86400000),
+    resolved_at: '0',
   },
   {
     id: '1',
     job_title: 'Smart Contract Audit: Lending Protocol',
     job_brief:
-      'Security audit of a DeFi lending protocol. Auditor claims all 47 items from the scope document have been reviewed and a full report delivered. Client disputes completeness of the audit report, citing three missing sections.',
+      'Security audit of a DeFi lending protocol. Auditor claims all 47 items from the scope document have been reviewed and a full report delivered. Client disputes completeness of the audit report.',
     evidence_url: 'https://github.com/example/lending-audit',
     resolution_criteria:
-      'Audit is complete when all scoped contracts are reviewed and a report is delivered with findings categorized by severity.',
+      'Audit is complete when all scoped contracts are reviewed with findings categorized by severity.',
     claimant: '0xb2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b021',
     respondent: '0xc3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c121',
-    escrow_amount: 8000000000000000000,
+    escrow_amount: '8000000000000000000',
     status: 'resolved',
     verdict: 'claimant',
-    verdict_data: {
-      verdict: 'claimant',
-      confidence: 0.87,
-      reasoning:
-        'Evidence confirms all 47 scoped items were reviewed. The report is comprehensive and follows industry-standard categorization. Minor formatting issues do not constitute incomplete delivery.',
-      key_finding:
-        'Audit report covers all scoped contracts with appropriate severity classifications.',
-      criteria_met: true,
-      notable_gaps: null,
-    },
-    validator_notes: [],
-    created_at: Date.now() - 172800000,
-    resolved_at: Date.now() - 43200000,
+    verdict_reasoning:
+      'Evidence confirms all 47 scoped items were reviewed. The report is comprehensive and follows industry-standard categorization. Minor formatting issues do not constitute incomplete delivery.',
+    verdict_confidence: 'high',
+    evidence_summary:
+      'GitHub repository contains a full audit report PDF covering all 47 scoped contracts. Findings are categorized as Critical (0), High (2), Medium (5), Low (8).',
+    created_at: String(Date.now() - 172800000),
+    resolved_at: String(Date.now() - 43200000),
   },
   {
     id: '2',
@@ -71,32 +68,17 @@ const MOCK_DISPUTES: Dispute[] = [
       'Designer contracted to deliver 12 screens in Figma for an NFT marketplace. Designer claims all screens are delivered. Client claims 3 screens are missing and the design system is incomplete.',
     evidence_url: 'https://figma.com/example/nft-marketplace',
     resolution_criteria:
-      'Design is complete when all 12 agreed screens are delivered in Figma with a complete component library and design tokens.',
+      'Design is complete when all 12 agreed screens are delivered in Figma with a complete component library.',
     claimant: '0xd4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d221',
     respondent: '0xe5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e321',
-    escrow_amount: 3200000000000000000,
+    escrow_amount: '3200000000000000000',
     status: 'pending',
-    verdict: null,
-    validator_notes: [],
-    created_at: Date.now() - 3600000,
-    resolved_at: null,
-  },
-  {
-    id: '3',
-    job_title: 'Backend API: Real-time Analytics Dashboard',
-    job_brief:
-      'Developer was hired to build a Node.js REST API with WebSocket support for real-time data streaming. Client disputes that the WebSocket implementation is incomplete and causes memory leaks under load.',
-    evidence_url: 'https://github.com/example/analytics-api',
-    resolution_criteria:
-      'API is complete when all documented endpoints are functional, WebSocket streams without memory leaks, and load tests pass at 1000 concurrent connections.',
-    claimant: '0xf6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f421',
-    respondent: '0xa7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a521',
-    escrow_amount: 5500000000000000000,
-    status: 'pending',
-    verdict: null,
-    validator_notes: [],
-    created_at: Date.now() - 7200000,
-    resolved_at: null,
+    verdict: '',
+    verdict_reasoning: '',
+    verdict_confidence: '',
+    evidence_summary: '',
+    created_at: String(Date.now() - 3600000),
+    resolved_at: '0',
   },
 ]
 
@@ -105,10 +87,10 @@ const MOCK_STATS: PlatformStats = {
   resolved_count: 13891,
   pending_count: 201,
   under_review_count: 116,
-  total_escrowed_wei: 12400000000000000000000000,
+  total_escrowed_wei: '12400000000000000000000000',
 }
 
-// ─── Hooks ────────────────────────────────────────────────────────────────────
+// ── Hooks ─────────────────────────────────────────────────────────────────────
 
 export function useDisputes() {
   const [disputes, setDisputes] = useState<Dispute[]>([])
@@ -121,7 +103,6 @@ export function useDisputes() {
     setError(null)
     try {
       if (CONTRACT_NOT_DEPLOYED) {
-        // Dev mode: use mock data
         await new Promise((r) => setTimeout(r, 500))
         setDisputes(MOCK_DISPUTES)
         setStats(MOCK_STATS)
@@ -135,7 +116,6 @@ export function useDisputes() {
       }
     } catch (e: any) {
       setError(e?.message || 'Failed to load disputes from contract')
-      // Fallback to mock on error so UI doesn't break during dev
       setDisputes(MOCK_DISPUTES)
       setStats(MOCK_STATS)
     } finally {
@@ -190,7 +170,11 @@ export function useMyDisputes(address: string | null) {
       try {
         if (CONTRACT_NOT_DEPLOYED) {
           await new Promise((r) => setTimeout(r, 300))
-          setDisputes(MOCK_DISPUTES.filter((d) => d.claimant === address || d.respondent === address))
+          setDisputes(
+            MOCK_DISPUTES.filter(
+              (d) => d.claimant === address || d.respondent === address
+            )
+          )
         } else {
           setDisputes(await fetchDisputesByParty(address))
         }
@@ -224,7 +208,6 @@ export function useCreateDispute() {
       setTxHash(null)
       try {
         if (CONTRACT_NOT_DEPLOYED) {
-          // Simulate tx in dev mode
           await new Promise((r) => setTimeout(r, 1500))
           const fakeTx = '0x' + Math.random().toString(16).slice(2).padEnd(64, '0')
           setTxHash(fakeTx)
@@ -241,7 +224,6 @@ export function useCreateDispute() {
           senderAddress: params.senderAddress,
         })
         setTxHash(hash)
-        // Wait for confirmation
         await waitForTx(hash)
         return true
       } catch (e: any) {
@@ -291,11 +273,11 @@ export function useFinalizeVerdict() {
   const [txHash, setTxHash] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const finalizeVerdict = useCallback(async (disputeId: string, senderAddress?: string) => {
+  const finalizeVerdict = useCallback(async (disputeId: string) => {
     setFinalizing(true)
     setError(null)
     try {
-      if (CONTRACT_NOT_DEPLOYED || !senderAddress) {
+      if (CONTRACT_NOT_DEPLOYED) {
         await new Promise((r) => setTimeout(r, 1200))
         setTxHash('0x' + Math.random().toString(16).slice(2).padEnd(64, '0'))
         return true
@@ -319,7 +301,7 @@ export function useCancelDispute() {
   const [cancelling, setCancelling] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const cancelDispute = useCallback(async (disputeId: string, senderAddress: string) => {
+  const cancelDispute = useCallback(async (disputeId: string) => {
     setCancelling(true)
     setError(null)
     try {

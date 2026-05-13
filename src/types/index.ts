@@ -1,15 +1,7 @@
 export type DisputeStatus = 'pending' | 'under_review' | 'resolved' | 'finalized' | 'cancelled'
-export type VerdictType = 'claimant' | 'respondent' | 'split' | null
+export type VerdictType = 'claimant' | 'respondent' | 'split' | ''
 
-export interface VerdictData {
-  verdict: VerdictType
-  confidence: number
-  reasoning: string
-  key_finding: string
-  criteria_met: boolean
-  notable_gaps: string | null
-}
-
+// Matches contract's dispute_to_dict() output exactly
 export interface Dispute {
   id: string
   job_title: string
@@ -18,22 +10,23 @@ export interface Dispute {
   resolution_criteria: string
   claimant: string
   respondent: string
-  escrow_amount: number
+  escrow_amount: string        // contract returns str(int(u256))
   status: DisputeStatus
   verdict: VerdictType
-  verdict_data?: VerdictData
-  evidence_summary?: string
-  validator_notes: string[]
-  created_at: number
-  resolved_at: number | null
+  verdict_reasoning: string    // contract field (not verdict_data)
+  verdict_confidence: string   // "high" | "medium" | "low"
+  evidence_summary: string
+  created_at: string           // contract returns str(int(u256))
+  resolved_at: string          // contract returns str(int(u256))
 }
 
+// Matches contract's get_platform_stats() output exactly
 export interface PlatformStats {
   total_disputes: number
   resolved_count: number
   pending_count: number
   under_review_count: number
-  total_escrowed_wei: number
+  total_escrowed_wei: string   // contract returns str(int)
 }
 
 export interface ValidatorCard {
