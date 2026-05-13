@@ -26,6 +26,26 @@ class Dispute:
     resolved_at: u256
 
 
+def dispute_to_dict(d: Dispute) -> dict:
+    return {
+        "id": d.id,
+        "job_title": d.job_title,
+        "job_brief": d.job_brief,
+        "evidence_url": d.evidence_url,
+        "resolution_criteria": d.resolution_criteria,
+        "claimant": str(d.claimant),
+        "respondent": str(d.respondent),
+        "escrow_amount": str(int(d.escrow_amount)),
+        "status": d.status,
+        "verdict": d.verdict,
+        "verdict_reasoning": d.verdict_reasoning,
+        "verdict_confidence": d.verdict_confidence,
+        "evidence_summary": d.evidence_summary,
+        "created_at": str(int(d.created_at)),
+        "resolved_at": str(int(d.resolved_at)),
+    }
+
+
 class DecentraJudge(gl.Contract):
 
     disputes: TreeMap[str, Dispute]
@@ -103,8 +123,9 @@ class DecentraJudge(gl.Contract):
                 "EVIDENCE URL: " + evidence_url + "\n\n"
                 "EVIDENCE CONTENT:\n"
                 + evidence_content[:6000]
-                + "\n\nProvide a concise factual summary (max 200 words) of what this evidence contains. "
-                "Focus only on objective facts. Do NOT make any judgment. Just summarize what is there."
+                + "\n\nProvide a concise factual summary (max 200 words) of what this "
+                "evidence contains. Focus only on objective facts. Do NOT make any "
+                "judgment. Just summarize what is there."
             )
             return gl.exec_prompt(summary_prompt)
 
@@ -204,26 +225,61 @@ class DecentraJudge(gl.Contract):
         self.disputes[dispute_id].status = "cancelled"
 
     @gl.public.view
-    def get_dispute(self, dispute_id: str) -> str:
+    def get_dispute(self, dispute_id: str) -> dict:
         assert dispute_id in self.disputes, "Dispute not found"
         d = gl.storage.copy_to_memory(self.disputes[dispute_id])
-        return json.dumps({
-            "id": d.id,
-            "job_title": d.job_title,
-            "job_brief": d.job_brief,
-            "evidence_url": d.evidence_url,
-            "resolution_criteria": d.resolution_criteria,
-            "claimant": str(d.claimant),
-            "respondent": str(d.respondent),
-            "escrow_amount": str(int(d.escrow_amount)),
-            "status": d.status,
-            "verdict": d.verdict,
-            "verdict_reasoning": d.verdict_reasoning,
-            "verdict_confidence": d.verdict_confidence,
-            "evidence_summary": d.evidence_summary,
-            "created_at": str(int(d.created_at)),
-            "resolved_at": str(int(d.resolved_at)),
-        })
+        return dispute_to_dict(d)
+
+    @gl.public.view
+    def get_all_disputes(self) -> list:
+        result = []
+        count = int(self.dispute_count)
+        for i in range(count):
+            key = str(i)
+            if key in self.disputes:
+                d = gl.storage.copy_to_memory(self.disputes[key])
+                result.append(dispute_to_dict(d))
+        return result
+
+    @gl.public.view
+    def get_disputes_by_party(self, address: str) -> list:
+        result = []
+        count = int(self.dispute_count)
+        for i in range(count):
+            key = str(i)
+            if key in self.disputes:
+                d = gl.storage.copy_to_memory(self.disputes[key])
+                if str(d.claimant) == address or str(d.respondent) == address:
+                    result.append(dispute_to_dict(d))
+        return result
+
+    @gl.public.view
+    def get_platform_stats(self) -> dict:
+        total = int(self.dispute_count)
+        resolved_count = 0
+        pending_count = 0
+        under_review_count = 0
+        total_escrowed = 0
+
+        for i in range(total):
+            key = str(i)
+            if key in self.disputes:
+                d = gl.storage.copy_to_memory(self.disputes[key])
+                total_escrowed += int(d.escrow_amount)
+                if d.status in ("resolved", "finalized"):
+                    resolved_count += 1
+                elif d.status == "pending":
+                    pending_count += 1
+                elif d.status == "under_review":
+                    under_review_count += 1
+
+        return {
+            "total_disputes": total,
+            "resolved_count": resolved_count,
+            "pending_count": pending_count,
+            "under_review_count": under_review_count,
+            "total_escrowed_wei": str(total_escrowed),
+        }
 
     @gl.public.view
     def get_dispute_count(self) -> u256:

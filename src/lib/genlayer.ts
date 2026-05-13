@@ -1,33 +1,24 @@
 import { createClient, chains, createAccount } from 'genlayer-js'
 import type { Dispute, PlatformStats } from '@/types'
 
-// ─── Types matching genlayer-js internals ─────────────────────────────────────
-// Address$1 in the SDK is `0x${string}` & { length: 42 }
-// We cast via `as unknown as` to satisfy it without importing internal types
 type GLAddress = `0x${string}` & { length: 42 }
 type GLTxHash = `0x${string}` & { length: 66 }
 
 function toGLAddress(addr: string): GLAddress {
   return addr as unknown as GLAddress
 }
-
 function toGLHash(hash: string): GLTxHash {
   return hash as unknown as GLTxHash
 }
 
-// ─── Contract address ─────────────────────────────────────────────────────────
 export const CONTRACT_ADDRESS =
   process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
   '0x0000000000000000000000000000000000000000'
 
-// ─── Clients ──────────────────────────────────────────────────────────────────
-
-/** Read-only client — no wallet needed */
 export function getReadClient() {
   return createClient({ chain: chains.simulator })
 }
 
-/** Write client — same client, account injected per-call via MetaMask */
 export function getWriteClient() {
   if (typeof window === 'undefined' || !(window as any).ethereum) {
     throw new Error('No injected wallet found. Please install MetaMask.')
@@ -35,7 +26,7 @@ export function getWriteClient() {
   return createClient({ chain: chains.simulator })
 }
 
-// ─── Read calls ───────────────────────────────────────────────────────────────
+// ── Read calls ────────────────────────────────────────────────────────────────
 
 export async function fetchAllDisputes(): Promise<Dispute[]> {
   const client = getReadClient()
@@ -54,6 +45,7 @@ export async function fetchDispute(id: string): Promise<Dispute> {
     functionName: 'get_dispute',
     args: [id],
   })
+  // Contract now returns a dict directly, not a JSON string
   return result as Dispute
 }
 
@@ -77,11 +69,7 @@ export async function fetchPlatformStats(): Promise<PlatformStats> {
   return result as PlatformStats
 }
 
-// ─── Write calls ──────────────────────────────────────────────────────────────
-// GenLayer's writeContract requires value: bigint (mandatory) and
-// account: Account (the viem Account object, not a raw address string).
-// We use createAccount() from genlayer-js only for the account shape;
-// actual signing goes through MetaMask via the injected provider.
+// ── Write calls ───────────────────────────────────────────────────────────────
 
 export async function txCreateDispute(params: {
   jobTitle: string
@@ -93,8 +81,6 @@ export async function txCreateDispute(params: {
   senderAddress: string
 }): Promise<string> {
   const client = getWriteClient()
-  // createAccount without a private key creates a "connected" account
-  // that delegates signing to the injected wallet
   const account = createAccount()
   const hash = await client.writeContract({
     address: toGLAddress(CONTRACT_ADDRESS),
@@ -112,9 +98,7 @@ export async function txCreateDispute(params: {
   return hash as string
 }
 
-export async function txEvaluateDispute(
-  disputeId: string,
-): Promise<string> {
+export async function txEvaluateDispute(disputeId: string): Promise<string> {
   const client = getWriteClient()
   const account = createAccount()
   const hash = await client.writeContract({
@@ -158,7 +142,7 @@ export async function waitForTx(hash: string) {
   return client.waitForTransactionReceipt({ hash: toGLHash(hash) })
 }
 
-// ─── Utilities ────────────────────────────────────────────────────────────────
+// ── Utilities ─────────────────────────────────────────────────────────────────
 
 export const toWei = (eth: string | number): bigint => {
   const val = typeof eth === 'string' ? parseFloat(eth) : eth
