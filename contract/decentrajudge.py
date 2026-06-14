@@ -6,6 +6,21 @@ from dataclasses import dataclass
 import json
 
 
+# Official pattern for sending GEN to EOA wallets
+# Source: docs.genlayer.com/developers/intelligent-contracts/features/value-transfers
+@gl.evm.contract_interface
+class _EOARecipient:
+    class View:
+        pass
+    class Write:
+        pass
+
+
+def send_gen(recipient: Address, amount: int) -> None:
+    """Send GEN to an EOA or EVM address using the official emit_transfer pattern."""
+    _EOARecipient(recipient).emit_transfer(value=u256(amount))
+
+
 @allow_storage
 @dataclass
 class Dispute:
@@ -200,17 +215,18 @@ class DecentraJudge(gl.Contract):
         payout = escrow - fee
         verdict = dispute.verdict
 
+        # Official transfer pattern per GenLayer docs
         if verdict == "claimant":
-            gl.transfer(dispute.claimant, payout)
+            send_gen(dispute.claimant, payout)
         elif verdict == "respondent":
-            gl.transfer(dispute.respondent, payout)
+            send_gen(dispute.respondent, payout)
         elif verdict == "split":
             half = payout // 2
-            gl.transfer(dispute.claimant, half)
-            gl.transfer(dispute.respondent, payout - half)
+            send_gen(dispute.claimant, half)
+            send_gen(dispute.respondent, payout - half)
 
         if fee > 0:
-            gl.transfer(self.owner, fee)
+            send_gen(self.owner, fee)
 
         self.disputes[dispute_id].status = "finalized"
 
@@ -221,7 +237,7 @@ class DecentraJudge(gl.Contract):
         assert dispute.claimant == gl.message.sender_address, "Only claimant can cancel"
         assert dispute.status == "pending", "Can only cancel pending disputes"
 
-        gl.transfer(dispute.claimant, int(dispute.escrow_amount))
+        send_gen(dispute.claimant, int(dispute.escrow_amount))
         self.disputes[dispute_id].status = "cancelled"
 
     @gl.public.view
