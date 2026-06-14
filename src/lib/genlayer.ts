@@ -1,6 +1,8 @@
-import { createClient, chains, createAccount } from 'genlayer-js'
+import { createClient, createAccount } from 'genlayer-js'
+import { testnetBradbury } from 'genlayer-js/chains'
 import type { Dispute, PlatformStats } from '@/types'
 
+// ── Types ─────────────────────────────────────────────────────────────────────
 type GLAddress = `0x${string}` & { length: 42 }
 type GLTxHash = `0x${string}` & { length: 66 }
 
@@ -11,19 +13,31 @@ function toGLHash(hash: string): GLTxHash {
   return hash as unknown as GLTxHash
 }
 
+// ── Config ────────────────────────────────────────────────────────────────────
+// Testnet Bradbury: production-like testnet with real AI/LLM workloads
+// RPC: https://rpc-bradbury.genlayer.com | Chain ID: 4221
+// Source: docs.genlayer.com/developers/networks
 export const CONTRACT_ADDRESS =
-  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
-  '0x0000000000000000000000000000000000000000'
+  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || ''
+
+if (!CONTRACT_ADDRESS) {
+  console.warn(
+    '[DecentraJudge] NEXT_PUBLIC_CONTRACT_ADDRESS is not set. ' +
+    'Deploy the contract and set this env variable.'
+  )
+}
+
+// ── Clients ───────────────────────────────────────────────────────────────────
 
 export function getReadClient() {
-  return createClient({ chain: chains.simulator })
+  return createClient({ chain: testnetBradbury })
 }
 
 export function getWriteClient() {
   if (typeof window === 'undefined' || !(window as any).ethereum) {
     throw new Error('No injected wallet found. Please install MetaMask.')
   }
-  return createClient({ chain: chains.simulator })
+  return createClient({ chain: testnetBradbury })
 }
 
 // ── Read calls ────────────────────────────────────────────────────────────────
@@ -45,7 +59,6 @@ export async function fetchDispute(id: string): Promise<Dispute> {
     functionName: 'get_dispute',
     args: [id],
   })
-  // Contract now returns a dict directly, not a JSON string
   return result as Dispute
 }
 
@@ -150,8 +163,8 @@ export const toWei = (eth: string | number): bigint => {
   return BigInt(Math.floor(val * 1e18))
 }
 
-export const fromWei = (wei: bigint | number): string => {
-  const val = typeof wei === 'number' ? BigInt(wei) : wei
+export const fromWei = (wei: bigint | number | string): string => {
+  const val = typeof wei === 'string' ? BigInt(wei) : typeof wei === 'number' ? BigInt(wei) : wei
   return (Number(val) / 1e18).toFixed(4)
 }
 
@@ -160,25 +173,24 @@ export const shortAddress = (addr: string): string => {
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`
 }
 
-export const generateValidatorPanel = (verdictData?: {
-  verdict: string
-  reasoning: string
-  confidence: number
-}) => {
-  if (!verdictData) return []
-  const confidence = verdictData.confidence ?? 0.7
+export const generateValidatorPanel = (verdict: string, reasoning: string, confidence: string) => {
+  if (!verdict) {
+    return Array.from({ length: 5 }, (_, i) => ({
+      id: `VALIDATOR #00${i + 1}`,
+      verdict: 'ANALYZING...',
+      reasoning: '',
+    }))
+  }
+
+  const favourMap: Record<string, number> = { high: 4, medium: 3, low: 2 }
+  const favourCount = favourMap[confidence] ?? 3
   const ids = ['#0032', '#0081', '#0114', '#0027', '#0099']
-  return ids.map((id, i) => {
-    const isAnalyzing = i === 4
-    const isFavour = !isAnalyzing && i < Math.ceil(confidence * 5)
-    return {
-      id: `VALIDATOR ${id}`,
-      verdict: isAnalyzing ? 'ANALYZING...' : isFavour ? 'IN FAVOUR' : 'DISPUTED',
-      reasoning: isAnalyzing
-        ? ''
-        : isFavour
-        ? verdictData.reasoning.slice(0, 120)
-        : 'Assessment diverges from primary ruling on key technical criteria.',
-    }
-  })
+
+  return ids.map((id, i) => ({
+    id: `VALIDATOR ${id}`,
+    verdict: i < favourCount ? 'IN FAVOUR' : 'DISPUTED',
+    reasoning: i < favourCount
+      ? reasoning.slice(0, 120)
+      : 'Assessment diverges from primary ruling on key technical criteria.',
+  }))
 }
