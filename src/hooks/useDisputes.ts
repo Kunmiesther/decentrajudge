@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Dispute, PlatformStats } from '@/types'
 import {
   fetchAllDisputes,
-  fetchDispute,
+  fetchDispute as fetchDisputeFromContract,
   fetchPlatformStats,
   fetchDisputesByParty,
   txCreateDispute,
@@ -15,80 +15,6 @@ import {
   toWei,
   CONTRACT_ADDRESS,
 } from '@/lib/genlayer'
-
-const CONTRACT_NOT_DEPLOYED =
-  CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000'
-
-// Mock data aligned with contract's dispute_to_dict() output
-const MOCK_DISPUTES: Dispute[] = [
-  {
-    id: '0',
-    job_title: 'Full-Stack Development: Decentralized Exchange',
-    job_brief:
-      'The claimant (Developer) asserts that all items defined in the Phase 3 milestone—specifically the smart contract auditing bridge and the frontend swap interface—have been delivered according to the specification document.\n\nThe respondent (Client) disputes the payment, citing that the unit tests for the liquidity pool contracts do not meet the 95% coverage threshold agreed upon in the technical annex.',
-    evidence_url: 'https://github.com/example/dex-core/pull/421',
-    resolution_criteria:
-      'Work is complete if: (1) All Phase 3 milestones are delivered, (2) Test coverage meets or exceeds 95%, (3) No critical vulnerabilities exist.',
-    claimant: '0xf4a9b2c1d3e5f6a7b8c9d0e1f2a3b4c5d6e7f821',
-    respondent: '0xa1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a921',
-    escrow_amount: '12500000000000000000',
-    status: 'under_review',
-    verdict: '',
-    verdict_reasoning: '',
-    verdict_confidence: '',
-    evidence_summary: '',
-    created_at: String(Date.now() - 86400000),
-    resolved_at: '0',
-  },
-  {
-    id: '1',
-    job_title: 'Smart Contract Audit: Lending Protocol',
-    job_brief:
-      'Security audit of a DeFi lending protocol. Auditor claims all 47 items from the scope document have been reviewed and a full report delivered. Client disputes completeness of the audit report.',
-    evidence_url: 'https://github.com/example/lending-audit',
-    resolution_criteria:
-      'Audit is complete when all scoped contracts are reviewed with findings categorized by severity.',
-    claimant: '0xb2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b021',
-    respondent: '0xc3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c121',
-    escrow_amount: '8000000000000000000',
-    status: 'resolved',
-    verdict: 'claimant',
-    verdict_reasoning:
-      'Evidence confirms all 47 scoped items were reviewed. The report is comprehensive and follows industry-standard categorization. Minor formatting issues do not constitute incomplete delivery.',
-    verdict_confidence: 'high',
-    evidence_summary:
-      'GitHub repository contains a full audit report PDF covering all 47 scoped contracts. Findings are categorized as Critical (0), High (2), Medium (5), Low (8).',
-    created_at: String(Date.now() - 172800000),
-    resolved_at: String(Date.now() - 43200000),
-  },
-  {
-    id: '2',
-    job_title: 'UI/UX Design: NFT Marketplace',
-    job_brief:
-      'Designer contracted to deliver 12 screens in Figma for an NFT marketplace. Designer claims all screens are delivered. Client claims 3 screens are missing and the design system is incomplete.',
-    evidence_url: 'https://figma.com/example/nft-marketplace',
-    resolution_criteria:
-      'Design is complete when all 12 agreed screens are delivered in Figma with a complete component library.',
-    claimant: '0xd4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d221',
-    respondent: '0xe5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e321',
-    escrow_amount: '3200000000000000000',
-    status: 'pending',
-    verdict: '',
-    verdict_reasoning: '',
-    verdict_confidence: '',
-    evidence_summary: '',
-    created_at: String(Date.now() - 3600000),
-    resolved_at: '0',
-  },
-]
-
-const MOCK_STATS: PlatformStats = {
-  total_disputes: 14208,
-  resolved_count: 13891,
-  pending_count: 201,
-  under_review_count: 116,
-  total_escrowed_wei: '12400000000000000000000000',
-}
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 
@@ -102,22 +28,14 @@ export function useDisputes() {
     setLoading(true)
     setError(null)
     try {
-      if (CONTRACT_NOT_DEPLOYED) {
-        await new Promise((r) => setTimeout(r, 500))
-        setDisputes(MOCK_DISPUTES)
-        setStats(MOCK_STATS)
-      } else {
-        const [disputeList, platformStats] = await Promise.all([
-          fetchAllDisputes(),
-          fetchPlatformStats(),
-        ])
-        setDisputes(disputeList)
-        setStats(platformStats)
-      }
+      const [disputeList, platformStats] = await Promise.all([
+        fetchAllDisputes(),
+        fetchPlatformStats(),
+      ])
+      setDisputes(disputeList)
+      setStats(platformStats)
     } catch (e: any) {
       setError(e?.message || 'Failed to load disputes from contract')
-      setDisputes(MOCK_DISPUTES)
-      setStats(MOCK_STATS)
     } finally {
       setLoading(false)
     }
@@ -138,17 +56,12 @@ export function useDispute(id: string) {
   useEffect(() => {
     const load = async () => {
       setLoading(true)
+      setError(null)
       try {
-        if (CONTRACT_NOT_DEPLOYED) {
-          await new Promise((r) => setTimeout(r, 300))
-          setDispute(MOCK_DISPUTES.find((d) => d.id === id) || null)
-        } else {
-          const d = await fetchDispute(id)
-          setDispute(d)
-        }
+        const d = await fetchDisputeFromContract(id)
+        setDispute(d)
       } catch (e: any) {
         setError(e?.message || 'Dispute not found')
-        setDispute(MOCK_DISPUTES.find((d) => d.id === id) || null)
       } finally {
         setLoading(false)
       }
@@ -168,16 +81,7 @@ export function useMyDisputes(address: string | null) {
     const load = async () => {
       setLoading(true)
       try {
-        if (CONTRACT_NOT_DEPLOYED) {
-          await new Promise((r) => setTimeout(r, 300))
-          setDisputes(
-            MOCK_DISPUTES.filter(
-              (d) => d.claimant === address || d.respondent === address
-            )
-          )
-        } else {
-          setDisputes(await fetchDisputesByParty(address))
-        }
+        setDisputes(await fetchDisputesByParty(address))
       } finally {
         setLoading(false)
       }
@@ -207,13 +111,6 @@ export function useCreateDispute() {
       setError(null)
       setTxHash(null)
       try {
-        if (CONTRACT_NOT_DEPLOYED) {
-          await new Promise((r) => setTimeout(r, 1500))
-          const fakeTx = '0x' + Math.random().toString(16).slice(2).padEnd(64, '0')
-          setTxHash(fakeTx)
-          return true
-        }
-
         const hash = await txCreateDispute({
           jobTitle: params.jobTitle,
           jobBrief: params.jobBrief,
@@ -248,11 +145,6 @@ export function useEvaluateDispute() {
     setEvaluating(true)
     setError(null)
     try {
-      if (CONTRACT_NOT_DEPLOYED) {
-        await new Promise((r) => setTimeout(r, 2000))
-        setTxHash('0x' + Math.random().toString(16).slice(2).padEnd(64, '0'))
-        return true
-      }
       const hash = await txEvaluateDispute(disputeId)
       setTxHash(hash)
       await waitForTx(hash)
@@ -277,11 +169,6 @@ export function useFinalizeVerdict() {
     setFinalizing(true)
     setError(null)
     try {
-      if (CONTRACT_NOT_DEPLOYED) {
-        await new Promise((r) => setTimeout(r, 1200))
-        setTxHash('0x' + Math.random().toString(16).slice(2).padEnd(64, '0'))
-        return true
-      }
       const hash = await txFinalizeVerdict(disputeId)
       setTxHash(hash)
       await waitForTx(hash)
@@ -305,10 +192,6 @@ export function useCancelDispute() {
     setCancelling(true)
     setError(null)
     try {
-      if (CONTRACT_NOT_DEPLOYED) {
-        await new Promise((r) => setTimeout(r, 1000))
-        return true
-      }
       const hash = await txCancelDispute(disputeId)
       await waitForTx(hash)
       return true
