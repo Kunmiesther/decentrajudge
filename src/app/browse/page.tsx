@@ -53,11 +53,11 @@ export default function BrowsePage() {
 
     // Sort
     if (sortBy === 'newest') {
-      list.sort((a, b) => b.created_at - a.created_at)
+      list.sort((a, b) => Number(b.created_at) - Number(a.created_at))
     } else if (sortBy === 'escrow_desc') {
-      list.sort((a, b) => b.escrow_amount - a.escrow_amount)
+      list.sort((a, b) => Number(b.escrow_amount) - Number(a.escrow_amount))
     } else if (sortBy === 'escrow_asc') {
-      list.sort((a, b) => a.escrow_amount - b.escrow_amount)
+      list.sort((a, b) => Number(a.escrow_amount) - Number(b.escrow_amount))
     }
 
     return list
