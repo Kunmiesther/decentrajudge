@@ -49,7 +49,7 @@ export async function fetchAllDisputes(): Promise<Dispute[]> {
     functionName: 'get_all_disputes',
     args: [],
   })
-  return (result as Dispute[]) || []
+  return (result as unknown as Dispute[]) || []
 }
 
 export async function fetchDispute(id: string): Promise<Dispute> {
@@ -59,7 +59,7 @@ export async function fetchDispute(id: string): Promise<Dispute> {
     functionName: 'get_dispute',
     args: [id],
   })
-  return result as Dispute
+  return result as unknown as Dispute
 }
 
 export async function fetchDisputesByParty(address: string): Promise<Dispute[]> {
@@ -69,7 +69,7 @@ export async function fetchDisputesByParty(address: string): Promise<Dispute[]> 
     functionName: 'get_disputes_by_party',
     args: [address],
   })
-  return (result as Dispute[]) || []
+  return (result as unknown as Dispute[]) || []
 }
 
 export async function fetchPlatformStats(): Promise<PlatformStats> {
@@ -79,7 +79,7 @@ export async function fetchPlatformStats(): Promise<PlatformStats> {
     functionName: 'get_platform_stats',
     args: [],
   })
-  return result as PlatformStats
+  return result as unknown as PlatformStats
 }
 
 // ── Write calls ───────────────────────────────────────────────────────────────
