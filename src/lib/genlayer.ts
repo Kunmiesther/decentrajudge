@@ -1,5 +1,5 @@
 import { createClient, createAccount } from 'genlayer-js'
-import { testnetBradbury } from 'genlayer-js/chains'
+import { studionet } from 'genlayer-js/chains'
 import type { Dispute, PlatformStats } from '@/types'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -30,14 +30,14 @@ if (!CONTRACT_ADDRESS) {
 // ── Clients ───────────────────────────────────────────────────────────────────
 
 export function getReadClient() {
-  return createClient({ chain: testnetBradbury })
+  return createClient({ chain: studionet })
 }
 
 export function getWriteClient() {
   if (typeof window === 'undefined' || !(window as any).ethereum) {
     throw new Error('No injected wallet found. Please install MetaMask.')
   }
-  return createClient({ chain: testnetBradbury })
+  return createClient({ chain: studionet })
 }
 
 // ── Read calls ────────────────────────────────────────────────────────────────
